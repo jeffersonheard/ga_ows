@@ -657,7 +657,7 @@ class WFS(
             self.adapter = GeoDjangoWFSAdapter(self.models)
 
     def get_capabilities_response(self, request, params):
-        return render_to_response('ga_ows/WFS_GetCapabilitiles.template.xml', {
+        return render_to_response('ga_ows/WFS_GetCapabilities.template.xml', {
             "title" : self.title,
             "keywords" : self.keywords,
             "fees" : self.fees,
@@ -679,7 +679,7 @@ class WFS(
 class WFST(WFS,TransactionMixin,GetFeatureWithLockMixin, LockFeatureMixin):
     """ A generic view supporting the WFS 2.0.0 standard from the OGC including transactions"""
     def get_capabilities_response(self, request, params):
-        return render_to_response('ga_ows/WFS_GetCapabilitiles.template.xml', {
+        return render_to_response('ga_ows/WFS_GetCapabilities.template.xml', {
             "title" : self.title,
             "keywords" : self.keywords,
             "fees" : self.fees,

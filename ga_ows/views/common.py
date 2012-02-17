@@ -235,6 +235,7 @@ class GetCapabilitiesMixin(object):
                 "updatesequence" : updateSequence}.items()))
 
 
+
 class OWSView(View, GetCapabilitiesMixin):
     """A generic view for an OWS webservice.  Includes the GetCapabilities mixin."""
 
@@ -242,6 +243,8 @@ class OWSView(View, GetCapabilitiesMixin):
     #: defaults to true, but should be set to false if you anticipate standards-strict clients.  In practice, though
     #: you almost never get these
     extended_exceptions = True
+
+
 
     def _parse_xml_Request(self, raw_post_data):
         root = etree.fromstring(raw_post_data)
