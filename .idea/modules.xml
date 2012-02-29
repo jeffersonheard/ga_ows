@@ -4,7 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/../ga_datacube/.idea/ga_datacube.iml" filepath="$PROJECT_DIR$/../ga_datacube/.idea/ga_datacube.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/ga_ows.iml" filepath="$PROJECT_DIR$/.idea/ga_ows.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../../geoanalytics/.idea/geoanalytics.iml" filepath="$PROJECT_DIR$/../../geoanalytics/.idea/geoanalytics.iml" />
+      <module fileurl="file://$USER_HOME$/geoanalytics/.idea/geoanalytics.iml" filepath="$USER_HOME$/geoanalytics/.idea/geoanalytics.iml" />
     </modules>
   </component>
 </project>

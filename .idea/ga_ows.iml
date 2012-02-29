@@ -3,7 +3,7 @@
   <component name="FacetManager">
     <facet type="django" name="Django">
       <configuration>
-        <option name="rootFolder" value="$MODULE_DIR$/../../geoanalytics" />
+        <option name="rootFolder" value="$MODULE_DIR$/../geoanalytics/ga" />
         <option name="settingsModule" value="settings.py" />
         <option name="manageScript" value="manage.py" />
       </configuration>
@@ -11,7 +11,7 @@
   </component>
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$" />
-    <orderEntry type="jdk" jdkName="Python 2.7.1 virtualenv at ~/geoanalytics" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 2.7.1 virtualenv at ~/Source/geoanalytics" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="ga_datacube" />
     <orderEntry type="module" module-name="geoanalytics" />
