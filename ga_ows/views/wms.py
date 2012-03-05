@@ -19,6 +19,39 @@ from ga_ows import utils
 from ga_ows.models.wms import Cache
 from ga_ows.views import common
 from ga_ows.utils import create_spatialref
+import django.forms as f
+
+class GetMapParameters(common.RequestForm):
+    layers = utils.MultipleValueField()
+    srs = f.CharField()
+    bbox = utils.BBoxField()
+    width = f.IntegerField()
+    height =f.IntegerField()
+    styles = f.CharField(required=False)
+    format = f.CharField()
+    bgcolor = f.CharField(required=False)
+    transparent = f.BooleanField(required=False)
+    time = f.DateTimeField(required=False)
+    filter = f.CharField(required=False)
+    elevation = f.FloatField(required=False)
+    version = f.CharField(required=False)
+
+    @classmethod
+    def from_request(cls, request):
+        request['layers'] = request.get('layers').split(',')
+        request['srs'] = request.get('srs', 'EPSG:4326')
+        request['filter'] = request.get('filter')
+        request['bbox'] = request.get('bbox')
+        request['width'] = int( request.get('width') )
+        request['height'] = int( request.get('height') )
+        request['styles'] = request.get('styles')
+        request['format'] = request.get('format', 'image/png')
+        request['bgcolor'] = request.get('bgcolor')
+        request['transparent'] = request.get('transparent', False) == 'true'
+        request['time'] = utils.parsetime(request.get('time'))
+        request['elevation'] = request.get('elevation', None)
+        request['version'] = request.get('version', None)
+
 
 class WMSAdapterBase(object):
     def __init__(self, application, cls, styles, **config):
@@ -219,7 +252,7 @@ class WMS(common.OWSView, GetCapabilitiesMixin):
         wherey = bbox[1] + y/height*(bbox[3]-bbox[1])
         return self.adapter.get_feature_info(wherex, wherey, **kwargs)
 
-    def GetValidTimes(self, r, **kwargs):
+    def GetValidTimes(self, r, kwargs):
         """Vendor extension that returns valid timestamps in json format"""
         if 'callback' in kwargs:
                 return HttpResponse("{callback}({js})".format(
@@ -229,7 +262,7 @@ class WMS(common.OWSView, GetCapabilitiesMixin):
         else:
             return HttpResponse(json.dumps([t.strftime('%Y.%m.%d-%H:%M:%S.%f') for t in self.adapter.get_valid_times(**kwargs)]), mimetype='application/json')
 
-    def GetValidElevations(self, r, **kwargs):
+    def GetValidElevations(self, r, kwargs):
         """Vendor extension that returns valid elevation bands in json format"""
         if 'callback' in kwargs:
                 return HttpResponse("{callback}({js})".format(
@@ -239,7 +272,7 @@ class WMS(common.OWSView, GetCapabilitiesMixin):
         else:
             return HttpResponse(json.dumps(self.adapter.get_valid_elevations(**kwargs)), mimetype='application/json')
 
-    def GetValidVersions(self, r, **kwargs):
+    def GetValidVersions(self, r, kwargs):
         """Vendor extension that returns valid version bands in json format"""
         if 'callback' in kwargs:
                 return HttpResponse("{callback}({js})".format(
@@ -249,75 +282,36 @@ class WMS(common.OWSView, GetCapabilitiesMixin):
         else:
             return HttpResponse(json.dumps(self.adapter.get_valid_versions(**kwargs)), mimetype='application/json')
 
-    def GetMap(self,  
-        r,
-        layers=None, 
-        srs=None,
-        bbox=None,
-        width=None, 
-        height=None, 
-        styles=None, 
-        format='image/png', 
-        bgcolor=None,
-        transparent=True,
-        exceptions='application/vnd.ogc.se_xml',
-        times=None,
-        elevations=None,
-        **kwargs
+    def GetMap(self, r, kwargs
     ):
+        parms = GetMapParameters.create(kwargs).cleaned_data
 
-        if not width:
-            raise common.MissingParameterValue.at('width')
-        if not height:
-            raise common.MissingParameterValue.at('height')
-        if not layers:
-            raise common.MissingParameterValue.at('layers')
-        if self.adapter.requires_time and not times:
-            raise common.MissingParameterValue.at('times')
-        if self.adapter.requires_elevation and not elevations:
-            raise common.MissingParameterValue.at('elevations')
+        if self.adapter.requires_time and 'times' not in parms:
+            raise common.MissingParameterValue.at('time')
+        if self.adapter.requires_elevation and 'elevation' not in parms:
+            raise common.MissingParameterValue.at('elevation')
 
-        d = {
-            'layers' : layers, 'srs' : srs, 'bbox' : bbox, 'width' : width, 'height' : height, 
-            'styles' : styles, 'format' : format, 'bgcolor' : bgcolor, 'transparent' : transparent, 
-            'exceptions' : exceptions, 'times' : times, 'elevations' : elevations
-        }
-        for k,v in kwargs.items():
-            d[k] = v
 
-        cache_key = self.adapter.get_cache_key(**d)
-        if cache_key:
-            r = Cache.retrieve(self.adapter.application, cache_key)
-            if r:
-                return HttpResponse(r, mimetype=format)
 
-        layers = layers.split(',')
-        width = int(width)
-        height = int(height)
+        if parms['format'].startswith('image/'):
+            format = parms['format'][len('image/'):]
 
-        bbox = [float(x) for x in bbox.split(',')]
-        
-        if times:
-            times = [utils.parsetime(t) for t in times.split(',')]
-
-        if elevations:
-            elevations = [float(e) for e in elevations.split(',')]
-
-        if format.startswith('image/'):
-            format = format[len('image/'):]
+        filter = None
+        if parms['filter']:
+            filter = json.loads(parms['filter'])
 
         ds = self.adapter.get_2d_dataset(
-            query_layers=layers, 
-            srs=srs, 
-            bbox=bbox, 
-            width=width, 
-            height=height, 
-            styles=styles, 
-            bgcolor=bgcolor, 
-            transparent=transparent, 
-            times=times, 
-            elevations=elevations,
-            **kwargs
+            query_layers=parms['layers'],
+            srs=parms['srs'],
+            bbox=parms['bbox'],
+            width=parms['width'],
+            height=parms['height'],
+            styles=parms['styles'],
+            bgcolor=parms['bgcolor'],
+            transparent=parms['transparent'],
+            times=[parms['time']],
+            elevations=[parms['elevation']],
+            filter = filter
         )
  
         tmp = None
@@ -333,6 +327,7 @@ class WMS(common.OWSView, GetCapabilitiesMixin):
                 ds = gdal.Open(tmp.name)
                 # TODO add all the appropriate metadata from the request into the dataset if this == being returned as a GeoTIFF
 
+        format = parms['format']
         if format == 'tiff' or format == 'geotiff':
             tmp = tempfile.NamedTemporaryFile(suffix='.tif')
             ds2 = gdal.GetDriverByName('GTiff').CreateCopy(tmp.name, ds)
@@ -374,9 +369,5 @@ class WMS(common.OWSView, GetCapabilitiesMixin):
                 del tmp
                 raise common.NoApplicableCode(str(ex))
 
-        if cache_key and tmp:
-            expiration = self.expires(datetime.datetime.now())
-            tmp.seek(0)
-            Cache.add(self.adapter.application, tmp.read(), cache_key, expires=expiration)
         return ret
 

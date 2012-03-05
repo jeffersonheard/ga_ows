@@ -16,18 +16,19 @@ class OWSCompositeException(Exception):
         self.exceptions = exceptions
 
     def xml(self, extend=False):
-        exn = etree.Element("ExceptionReport")
-        exn.attrib['xmlns'] = "http://www.opengis.net/ows/1.1"
-        exn.attrib['xmlns:xsi'] = "http://www.w3.org/2001/XMLSchema-instance"
-        exn.attrib['xsi:schemaLocation'] = "http://www.opengis.net/ows/1.1owsExceptionReport.xsd"
+        exn = etree.Element("ExceptionReport", nsmap={
+            #    'xmlns' : "http://www.opengis.net/ows/1.1",
+            #    'xsi' : "http://www.w3.org/2001/XMLSchema-instance",
+        })
+        exn.attrib['{http://www.w3.org/2001/XMLSchema-instance}schemaLocation'] = "http://www.opengis.net/ows/1.1owsExceptionReport.xsd"
         exn.attrib['version']="1.0.0"
-        exn.attrib['xml:lang'] = "en"
-        for e in self.exceptions:
-            exncode = exn.SubElement('Exception')
-            exncode.attrib['exceptionCode'] = e.__name__
-            exncode.attrib['locator'] = e.locator
-            if extend:
-                exncode.text = str(e)
+        exn.attrib['lang'] = "en"
+        exncode = etree.SubElement(exn, 'Exception')
+        exncode.attrib['exceptionCode'] = self.__class__.__name__
+        exncode.attrib['locator'] = self.locator
+        if extend:
+            exncode.text = self.__str__()
+        return etree.tostring(exn, pretty_print=True)
 
     def __str__(self):
         return ''.join(["""<<<EXCEPTION_REPORT\n""",
@@ -84,9 +85,8 @@ class OWSException(Exception):
         in the Exception element's text
         """
         exn = etree.Element("ExceptionReport", nsmap={
-            'xmlns' : "http://www.opengis.net/ows/1.1",
-            'xsi' : "http://www.w3.org/2001/XMLSchema-instance",
-
+        #    'xmlns' : "http://www.opengis.net/ows/1.1",
+        #    'xsi' : "http://www.w3.org/2001/XMLSchema-instance",
         })
         exn.attrib['{http://www.w3.org/2001/XMLSchema-instance}schemaLocation'] = "http://www.opengis.net/ows/1.1owsExceptionReport.xsd"
         exn.attrib['version']="1.0.0"
@@ -243,8 +243,6 @@ class OWSView(View, GetCapabilitiesMixin):
     #: defaults to true, but should be set to false if you anticipate standards-strict clients.  In practice, though
     #: you almost never get these
     extended_exceptions = True
-
-
 
     def _parse_xml_Request(self, raw_post_data):
         root = etree.fromstring(raw_post_data)

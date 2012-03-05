@@ -18,6 +18,9 @@ def parsetime(t):
         '%Y%m%d'
     ]
 
+    if not t:
+        return None
+
     ret = None
     for tf in timeformats:
         try:
@@ -105,14 +108,18 @@ class BBoxField(Field):
         try:
             lx, ly, ux, uy = value.split(',')
             if self.localize:
-                lx = float(formats.sanitize_separators(lx))
-                ly = float(formats.sanitize_separators(ly))
-                ux = float(formats.sanitize_separators(ux))
-                uy = float(formats.sanitize_separators(uy))
+                lx = float(sanitize_separators(lx))
+                ly = float(sanitize_separators(ly))
+                ux = float(sanitize_separators(ux))
+                uy = float(sanitize_separators(uy))
 
                 if uy < ly or ux < lx:
                     raise ValidationError("BBoxes must be in lower-left(x,y), upper-right(x,y) order")
         except (ValueError, TypeError):
             raise ValidationError("BBoxes must be four floating point values separated by commas")
 
+        lx = float(sanitize_separators(lx))
+        ly = float(sanitize_separators(ly))
+        ux = float(sanitize_separators(ux))
+        uy = float(sanitize_separators(uy))
         return lx, ly, ux, uy
