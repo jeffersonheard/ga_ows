@@ -1,128 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE WMT_MS_Capabilities SYSTEM "{{MEDIA_URL}}/wms/WMS_MS_Capabilities.dtd">
+<!DOCTYPE WMT_MS_Capabilities SYSTEM "{{STATIC_URL}}/wms/WMS_MS_Capabilities.dtd">
 <WMT_MS_Capabilities version="1.1.1" updateSequence="907">
    <Service>
       <Name>OGC:WMS</Name>
-      <Title>GeoAnalytics Web Map Service</Title>
+      <Title>{{ title }}</Title>
       <Abstract>A compliant implementation of WMS 1.1.1 plus dynamic styling (however not SLD dynamic styling).</Abstract>
       <KeywordList>
-         <Keyword>WMS</Keyword>
-         <Keyword>GEOANALYTICS</Keyword>
+          {% for keyword in keywords %}
+         <Keyword>{{ keyword }}</Keyword>
+          {% endfor %}
       </KeywordList>
-      <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="{{serviceurl}}"/>
+      <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="{{service_url}}"/>
       <ContactInformation>
-      {% if config.contact %}
+      {% if contact_person %}
          <ContactPersonPrimary>
-            <ContactPerson>{{config.contact.person}}</ContactPerson>
-            <ContactOrganization>{{config.contact.organization}}</ContactOrganization>
+            <ContactPerson>{{contact_person}}</ContactPerson>
+            <ContactOrganization>{{contact_organization}}</ContactOrganization>
          </ContactPersonPrimary>
-         <ContactPosition>{{config.contact.position}}</ContactPosition>
+         <ContactPosition>{{contact_position}}</ContactPosition>
          <ContactAddress>
-            <AddressType>{{config.contact.address.type}}</AddressType>
-            <Address>{{config.contact.address.address}}</Address>
-            <City>{{config.contact.address.city}}</City>
-            <StateOrProvince>{{config.contact.address.state}}</StateOrProvince>
-            <PostCode>{{config.contact.address.postcode}}</PostCode>
-            <Country>{{config.contact.address.country}}</Country>
+            <AddressType>{{contact_address_type}}</AddressType>
+            <Address>{{contact_address}}</Address>
+            <City>{{contact_city}}</City>
+            <StateOrProvince>{{contact_state}}</StateOrProvince>
+            <PostCode>{{contact_postcode}}</PostCode>
+            <Country>{{contact_country}}</Country>
          </ContactAddress>
-         <ContactVoiceTelephone/>
-         <ContactFacsimileTelephone>919 321-6154</ContactFacsimileTelephone>
-         <ContactElectronicMailAddress>jeff@renci.org</ContactElectronicMailAddress>
+         <ContactElectronicMailAddress>{{ contact_email }}</ContactElectronicMailAddress>
       </ContactInformation>
       {% endif %}
-      <Fees>NONE</Fees>
-      <AccessConstraints>NONE</AccessConstraints>
+      <Fees>{{ fees }}</Fees>
+      <AccessConstraints>{{ contraints }}</AccessConstraints>
    </Service>
    <Capability>
       <Request>
-         <GetCapabilities>
-            <Format>application/vnd.ogc.wms_xml</Format>
-            <DCPType>
-               <HTTP>
-                  <Get>
-                     <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="{{serviceurl}}?SERVICE=WMS&amp;"/>
-                  </Get>
-                  <Post>
-                     <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="{{serviceurl}}?SERVICE=WMS&amp;"/>
-                  </Post>
-               </HTTP>
-            </DCPType>
-         </GetCapabilities>
-         <GetMap>
-            <Format>image/png</Format>
-            <Format>image/geotiff</Format>
-            <Format>image/geotiff8</Format>
-            <Format>image/jpeg</Format>
-            <Format>image/tiff</Format>
-            <Format>image/tiff8</Format>
-            <DCPType>
-               <HTTP>
-                  <Get>
-                     <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="{{serviceurl}}?SERVICE=WMS&amp;"/>
-                  </Get>
-               </HTTP>
-            </DCPType>
-         </GetMap>
-         <GetFeatureInfo>
-            <Format>text/plain</Format>
-            <Format>text/html</Format>
-	    <!-- <Format>application/vnd.ogc.gml</Format> DO NOT SUPPORT THIS YET -->
-	    <Format>application/json</Format>
-	    <Format>application/jsonp</Format>
-            <DCPType>
-               <HTTP>
-                  <Get>
-                     <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="{{serviceurl}}?SERVICE=WMS&amp;"/>
-                  </Get>
-                  <Post>
-                     <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="{{serviceurl}}&amp;"/>
-                  </Post>
-               </HTTP>
-            </DCPType>
-         </GetFeatureInfo>
-         {% if config.describe_layer %}
-         <DescribeLayer>
-            <Format>application/vnd.ogc.wms_xml</Format>
-            <DCPType>
-               <HTTP>
-                  <Get>
-                     <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="{{serviceurl}}?SERVICE=WMS&amp;"/>
-                  </Get>
-               </HTTP>
-            </DCPType>
-         </DescribeLayer>
-         {% endif %}
-         {% if config.legend_graphics %}
-         <GetLegendGraphic>
-            <Format>image/png</Format>
-            <Format>image/jpeg</Format>
-            <Format>image/gif</Format>
-            <DCPType>
-               <HTTP>
-                  <Get>
-                     <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="{{serviceurl}}?SERVICE=WMS&amp;"/>
-                  </Get>
-               </HTTP>
-            </DCPType>
-         </GetLegendGraphic>
-         {% endif %}
-         <GetStyles>
-            <Format>application/json</Format>
-            <Format>application/jsonp</Format>
-            <DCPType>
-               <HTTP>
-                  <Get>
-                     <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="{{serviceurl}}?SERVICE=WMS&amp;"/>
-                  </Get>
-               </HTTP>
-            </DCPType>
-         </GetStyles>
+        {% for request in requests %}
+         <{{ request.name }}>
+                 {% for format in request.formats %}
+                    <Format>{{ format }}</Format>
+                 {%  endfor %}
+             <DCPType>
+                 <HTTP>
+                     <Get>
+                         <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="{{serviceurl}}?SERVICE=WMS&amp;"/>
+                     </Get>
+                     <Post>
+                         <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="{{serviceurl}}?SERVICE=WMS&amp;"/>
+                     </Post>
+                 </HTTP>
+             </DCPType>
+         </{{ request.name }}>
+        {% endfor %}
+      
+
       </Request>
       <Exception>
          <Format>application/vnd.ogc.se_xml</Format>
          <Format>application/vnd.ogc.se_inimage</Format>
       </Exception>
-      <UserDefinedSymbolization SupportSLD="1" UserLayer="1" UserStyle="1" RemoteWFS="1"/>
+      <UserDefinedSymbolization SupportSLD="0" UserLayer="1" UserStyle="1" RemoteWFS="1"/>
       <Layer>
          <Title>Geoanalytics Web Map Service</Title>
          <Abstract>A compliant implementation of WMS 1.1.1 plus non SLD dynamic styling.</Abstract>
@@ -4843,8 +4779,8 @@
          <SRS>EPSG:42305</SRS>
          <SRS>EPSG:42304</SRS>
          <SRS>EPSG:42303</SRS>
-         <LatLonBoundingBox minx="{{service.minx}}" miny="{{service.miny}}" maxx="{{service.maxx}}" maxy="{{service.maxy}}"/>
-         {% for layer in config.layers %}
+         <LatLonBoundingBox minx="{{service_bounds.minx}}" miny="{{service_bounds.miny}}" maxx="{{service_bounds.maxx}}" maxy="{{service_bounds.maxy}}"/>
+         {% for layer in layers %}
          <Layer queryable="{{layer.queryable}}">
             <Name>{{layer.name}}</Name>
             <Title>{{layer.title}}</Title>
@@ -4858,9 +4794,9 @@
                <Name>{{style.name}}</Name>
                <Title>{{style.title}}</Title>
                <Abstract/>
-               <LegendURL width="{{style.legendwidth}}" height="{{style.legendheight}}">
+               <LegendURL width="{{style.legend_width}}" height="{{style.legend_height}}">
                   <Format>image/png</Format>
-                  <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="{{style.legendurl}}"/>
+                  <OnlineResource xmlns:xlink="http://www.w3.org/1999/xlink" xlink:type="simple" xlink:href="{{style.legend_url}}"/>
                </LegendURL>
             </Style>
             {% endfor %}

@@ -1,6 +1,16 @@
-import cairo as cr 
+"""This is the rendering module to use if you expect to have Django's GEOS geometries.  All the renderers are exactly the same
+except in the class of geometry they expect.  This class is not directly used, generally, but is rather used by a WMS
+adapter to render.  If you're interested, see :class:`ga_ows.views.wms.GeoDjangoWMSAdapter` and it's get_2d_dataset method.
+"""
+import cairo as cr
 import math
 
+#: These operators can be used in stylesheets to change the way a layer is rendered.  For more information on their usage,
+#: check out `Cairo's website`_
+#:
+#: Operators are: add, atop, clear, dest, dest atop, dest in, dest out, dest over, in, out, over, saturate, source, and xor
+#:
+#: .. _`Cairo's website`: http://www.cairographics.org
 OPERATORS = {
     'add' : cr.OPERATOR_ADD,
     'atop' : cr.OPERATOR_ATOP,
@@ -18,18 +28,35 @@ OPERATORS = {
     'xor':cr.OPERATOR_XOR
 }
 
+#: These operators can be used in stylesheets to change the way linesegments are joined.  For more information on their usage,
+#: check out `Cairo's website`_
+#:
+#: Operators are: bevel, round, and join
+#:
+#: .. _`Cairo's website`: http://www.cairographics.org
 STROKEJOINS = {
     "bevel" : cr.LINE_JOIN_BEVEL, 
     "round" : cr.LINE_JOIN_ROUND,
     "miter" : cr.LINE_JOIN_MITER
 }
 
+#: These operators can be used in stylesheets to change the way a line ends are rendered.  For more information on their usage,
+#: check out `Cairo's website`_
+#:
+#: Operators are: butt, round, and square
+#:
+#: .. _`Cairo's website`: http://www.cairographics.org
 STROKECAPS = { 
     "butt" : cr.LINE_CAP_BUTT,
     "round" : cr.LINE_CAP_ROUND,
     "square" : cr.LINE_CAP_SQUARE
 }
 
+#: These are point shapes that can be rendered by the renderer.  They can be used as point_shape in the stylesheet.
+#:
+#: Operators are: circle, square, cross, x, diamond, and star
+#:
+#: .. _`Cairo's website`: http://www.cairographics.org
 POINTSHAPES = {
     'circle' : 0,
     'square' : 1,
@@ -39,18 +66,41 @@ POINTSHAPES = {
     'star' : 5
 }
 
+#: These operators can be used in stylesheets to change the way text is rendered.
+#:
+#: Operators are: normal and italic
+#:
+#: .. _`Cairo's website`: http://www.cairographics.org
 FONTSLANTS = {
     'normal' : cr.FONT_SLANT_NORMAL,
     'italic' : cr.FONT_SLANT_ITALIC
 }
 
+#: These operators can be used in stylesheets to change the way text is rendered.
+#:
+#: Operators are: normal and bold
+#:
+#: .. _`Cairo's website`: http://www.cairographics.org
 FONTWEIGHTS = {
     'normal' : cr.FONT_WEIGHT_NORMAL,
     'bold' : cr.FONT_WEIGHT_BOLD
 }
 
 class RenderingContext(object):
+    """Renders geometry to a Cairo surface"""
+
     def __init__(self, ss, minx, miny, maxx, maxy, width, height, surfdata=None):
+        """
+        :param ss: stylesheet to use for this geometry.  A :class:`ga_ows.rendering.styler.Stylesheet`
+        :param minx: the minx to render in the geometry's coordinate system
+        :param miny: the miny to render
+        :param maxx: the maxx to render
+        :param maxy: the maxy to render
+        :param width: the width of the image in pixels
+        :param height: the height of the image in pixels
+        :param surfdata: if we have pre-rendered surface data (like another layer), pass it in so a new surface isn't created.
+        :return:
+        """
         self.ss = ss
         
         self.minx=minx
@@ -69,16 +119,23 @@ class RenderingContext(object):
         self.pixel_h = (maxy-miny) / height
         self._cache = {}
 
-    def xy(self, x, y):
+    def _xy(self, x, y):
         return ((x-self.minx) / self.pixel_w,
                 -(y-self.maxy) / self.pixel_h)
 
     def cleanslate(self):
+        """Clear the slate for new rendering.
+        """
         self.ctx.set_source_rgba(1,1,1,0)
         self.ctx.set_operator(cr.OPERATOR_SOURCE)
         self.ctx.paint()
 
     def render(self, data, geometry_accessor):
+        """
+        :param data: The data to use.  This will be passed to the styler wholesale.
+        :param geometry_accessor: The accessor to get at the data's geometry.  It is applied to the data object and should return a Geometry object.
+        :return: None
+        """
         label_queue = []
 
         s0 = frozenset()
@@ -111,9 +168,9 @@ class RenderingContext(object):
                     stroke_pending = False
                     self.ctx.restore()
                 
-                stroke_pending, fill_pending = self.change_styles(s)
+                stroke_pending, fill_pending = self._change_styles(s)
 
-            self.sketch_feature(g)
+            self._sketch_feature(g)
 
         if stroke_pending and fill_pending:
             self.ctx.set_source_rgba(*self.fill_color)
@@ -130,45 +187,46 @@ class RenderingContext(object):
             self.ctx.fill()
             self.ctx.restore()
     
-        self.draw_labels(label_queue)
+        self._draw_labels(label_queue)
 
-    def sketch_feature(self, g):
+    def _sketch_feature(self, g):
+        """check the feature type and delegate ot the other sketch methods"""
         if g.geom_type == 'Point':
-            self.sketch_point(g)
+            self._sketch_point(g)
         elif g.geom_type == 'LineString':
-            self.sketch_linestring(g)
+            self._sketch_linestring(g)
         elif g.geom_type == 'MultiLineString':
-             self.sketch_multilinestring(g)
+             self._sketch_multilinestring(g)
         elif g.geom_type == 'Polygon':
-            self.sketch_polygon(g)
+            self._sketch_polygon(g)
         elif g.geom_type == 'MultiPolygon':
-             self.sketch_multipolygon(g)
+             self._sketch_multipolygon(g)
         elif g.geom_type == 'GeometryCollection':
-            self.sketch_collection(g)
+            self._sketch_collection(g)
         elif g.geom_type == 'LinearRing':
-            self.sketch_linearring(g)
+            self._sketch_linearring(g)
         else:
             raise Exception('unsupported feature type ' + g.geom_type)
 
-    def sketch_linestring(self, g):
-        xys = [self.xy(x,y) for x, y in g.coords]
+    def _sketch_linestring(self, g):
+        xys = [self._xy(x,y) for x, y in g.coords]
         self.ctx.move_to(*xys[0])
         for x, y in xys[1:]:
             self.ctx.line_to(x,y)
 
-    def sketch_multilinestring(self, g):
+    def _sketch_multilinestring(self, g):
         for linestring in g.coords:
-            xys = [self.xy(x,y) for x, y in linestring]
+            xys = [self._xy(x,y) for x, y in linestring]
             self.ctx.move_to(*xys[0])
             for x, y in xys[1:]:
                 self.ctx.line_to(x,y)
 
-    def sketch_linearring(self, g):
-        self.sketch_linestring(g)
+    def _sketch_linearring(self, g):
+        self._sketch_linestring(g)
         self.ctx.close_path()
 
-    def sketch_polygon(self, g):
-        xys = [self.xy(x,y) for x, y in g.coords[0]]
+    def _sketch_polygon(self, g):
+        xys = [self._xy(x,y) for x, y in g.coords[0]]
         self.ctx.move_to(*xys[0])
         for x, y in xys[1:]:
             self.ctx.line_to(x,y)
@@ -176,16 +234,16 @@ class RenderingContext(object):
 
         if len(g.coords) > 1:
             for interior in g.coords[1:]:
-                ixys = [self.xy(x,y) for x, y in interior] 
+                ixys = [self._xy(x,y) for x, y in interior]
                 self.ctx.new_sub_path()
                 self.ctx.move_to(*ixys[0])
                 for x, y in ixys[1:]:
                     self.ctx.line_to(x,y)
                 self.ctx.close_path()
     
-    def sketch_multipolygon(self, g):
+    def _sketch_multipolygon(self, g):
         for polygon in g.coords:
-            xys = [self.xy(x,y) for x, y in polygon[0]]
+            xys = [self._xy(x,y) for x, y in polygon[0]]
             self.ctx.move_to(*xys[0])
             for x, y in xys[1:]:
                 self.ctx.line_to(x,y)
@@ -193,32 +251,32 @@ class RenderingContext(object):
 
             if len(polygon) > 1:
                 for interior in polygon[1:]:
-                    ixys = [self.xy(x,y) for x, y in interior] 
+                    ixys = [self._xy(x,y) for x, y in interior]
                     self.ctx.new_sub_path()
                     self.ctx.move_to(*ixys[0])
                     for x, y in ixys[1:]:
                         self.ctx.line_to(x,y)
                         #self.ctx.close_path()
 
-    def sketch_collection(self, gs):
+    def _sketch_collection(self, gs):
         for g in gs:
             if g.type == 'Point':
-                self.sketch_point(self, g)
+                self._sketch_point(self, g)
             elif g.type == 'LineString':
-                self.sketch_linestring(self, g)
+                self._sketch_linestring(self, g)
             elif g.type == 'MultiLineString':
-                self.sketch_multilinestring(g)
+                self._sketch_multilinestring(g)
             elif g.type == 'Polygon':
-                self.sketch_polygon(g)
+                self._sketch_polygon(g)
             elif g.type == 'MultiPolygon':
-                self.sketch_multipolygon(g)
+                self._sketch_multipolygon(g)
             elif g.type == 'GeometryCollection':
-                self.sketch_collection(g)
+                self._sketch_collection(g)
             elif g.type == 'LinearRing':
-                self.sketch_linearring(g)
+                self._sketch_linearring(g)
 
-    def sketch_point(self, g):
-        x,y = self.xy(g.x, g.y)
+    def _sketch_point(self, g):
+        x,y = self._xy(g.x, g.y)
         self.ctx.move_to(x,y)
         r = self._pointsize
         if self._shape is 'circle':
@@ -268,14 +326,14 @@ class RenderingContext(object):
             self.ctx.paint()
             self.ctx.restore()
 
-    def reckon(self, geom):
+    def _reckon(self, geom):
         """analyze a geometry to figure out where the label should go"""
         if geom.geom_type == 'Point':
-            x, y = self.xy(geom.x, geom.y)
+            x, y = self._xy(geom.x, geom.y)
             return x+5, y-5, 0
         elif geom.geom_type in ('MultiPoint', 'Polygon', 'MultiPolygon', 'LinearRing'):
             p = geom.centroid
-            x, y = self.xy(p.x, p.y)
+            x, y = self._xy(p.x, p.y)
             return x, y, 0
         elif geom.geom_type == 'LineString' and len(geom.coords) >= 2:
             p1x, p1y = geom.coords[len(geom.coords)/2]
@@ -285,7 +343,7 @@ class RenderingContext(object):
             if run == 0:
                 run = 0.01*math.pi
             theta = math.atan(rise/run)
-            x, y = self.xy(p1x, p1y)
+            x, y = self._xy(p1x, p1y)
             return x, y, theta
         elif geom.geom_type == 'MultiLineString' and len(geom.geoms[0].coords) >= 2:
             p1x, p1y = geom.geoms[0].coords[len(geom.coords)/2]
@@ -295,23 +353,23 @@ class RenderingContext(object):
             if run == 0:
                 run = 0.01*math.pi
             theta = math.atan(rise/run)
-            x, y = self.xy(p1x, p1y)
+            x, y = self._xy(p1x, p1y)
             return x, y, theta
         else:
             p = geom.centroid
-            x, y = self.xy(p.x, p.y)
+            x, y = self._xy(p.x, p.y)
             return x, y, 0
 
         return 0,0,0
 
-    def draw_labels(self, lbls):
+    def _draw_labels(self, lbls):
         prevstyle = frozenset()
         pending = False
         haloes = False
 
         for geom, label, style in lbls:
             if label and len(label) > 0: 
-                x, y, theta = self.reckon(geom)
+                x, y, theta = self._reckon(geom)
                 
                 if len(prevstyle ^ style) > 0:
                     if pending:
@@ -323,8 +381,8 @@ class RenderingContext(object):
                         self.ctx.fill()
                         self.ctx.restore()
                         pending = False
-                    self.style_labels(style)
-                    haloes = self.style_haloes(style)
+                    self._style_labels(style)
+                    haloes = self._style_haloes(style)
                     prevstyle = style
                 
             self.ctx.save()
@@ -351,7 +409,7 @@ class RenderingContext(object):
             self.ctx.fill()
             self.ctx.restore()
 
-    def change_styles(self, s):
+    def _change_styles(self, s):
         sheet = dict(s)
 
         will_stroke = False
@@ -416,7 +474,7 @@ class RenderingContext(object):
                 self.point_icon = self._cache[sheet['point_icon']]
         return will_stroke, will_fill
 
-    def style_labels(self, s):
+    def _style_labels(self, s):
         sheet = dict(s)
         
         self.ctx.save()
@@ -445,7 +503,7 @@ class RenderingContext(object):
         else:
             self.label_offsets = (0,-8)
 
-        self.ctx.select_font_face(face,weight,slant)
+        self.ctx.select_font_face(face,slant,weight)
         self.ctx.set_font_size(size)
 
         if 'label_color' in sheet and sheet['label_color'] is not None:
@@ -456,7 +514,7 @@ class RenderingContext(object):
         if options is not None:
             self.ctx.set_font_options(options)
 
-    def style_haloes(self, s):
+    def _style_haloes(self, s):
         sheet = dict(s)
         
         if 'label_halo_size' in sheet and sheet['label_halo_size'] is not None:

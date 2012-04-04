@@ -3,10 +3,18 @@ from django.views.generic import View
 from django import forms as f
 from lxml import etree
 import pprint
+from ga_ows import utils
+import json
 import re
 
 from ga_ows.utils import CaseInsensitiveDict, MultipleValueField
 
+def get_filter_params(ciargs):
+    """filters can either be specified as JSON or they can be specified as keyword args prefixed by a single underscore, _"""
+    ret = {}
+    for arg in filter(lambda x: x.startswith('_'), ciargs.keys()):
+        ret[arg[1:]] = ciargs[arg]
+    return ret
 
 class OWSCompositeException(Exception):
     """Composite OWS Exception for raising more than one exception at once"""
@@ -234,6 +242,94 @@ class GetCapabilitiesMixin(object):
                 "acceptformats" : ','.join(accepted_formats),
                 "updatesequence" : updateSequence}.items()))
 
+
+class OWSMixinBase(object):
+    adapter = None
+
+class GetValidTimesMixin(OWSMixinBase):
+    class Parameters(CommonParameters):
+        callback = f.CharField(required=False)
+        layers = utils.MultipleValueField()
+
+        @classmethod
+        def from_request(cls, request):
+            request['layers'] = request.get('layers', '').split(',')
+            request['callback'] = request.get('callback', None)
+            if not request['callback']:
+                request['callback'] = request.get('jsonp', None)
+
+
+    def GetValidTimes(self, r, kwargs):
+        """Vendor extension that returns valid timestamps in json format"""
+        parms = GetValidTimesMixin.Parameters.create(kwargs)
+        if 'filter' in kwargs:
+            parms.cleaned_data['filter'] = json.loads(kwargs['filter'])
+        else:
+            parms.cleaned_data['filter'] = get_filter_params(kwargs)
+
+        if 'callback' in parms.cleaned_data:
+            return HttpResponse("{callback}({js})".format(
+                callback=kwargs['callback'],
+                js=json.dumps([t.strftime('%Y.%m.%d-%H:%M:%S.%f') for t in self.adapter.get_valid_times(**parms.cleaned_data)]), mimetype='test/jsonp'
+            ))
+        else:
+            return HttpResponse(json.dumps([t.strftime('%Y.%m.%d-%H:%M:%S.%f') for t in self.adapter.get_valid_times(**parms.cleaned_data)]), mimetype='application/json')
+
+class GetValidVersionsMixin(OWSMixinBase):
+    class Parameters(CommonParameters):
+        callback = f.CharField(required=False)
+        layers = utils.MultipleValueField()
+
+        @classmethod
+        def from_request(cls, request):
+            request['layers'] = request.get('layers', '').split(',')
+            request['callback'] = request.get('callback', None)
+            if not request['callback']:
+                request['callback'] = request.get('jsonp', None)
+
+    def GetValidVersions(self, r, kwargs):
+        """Vendor extension that returns valid version bands in json format"""
+        parms = GetValidTimesMixin.Parameters.create(kwargs)
+        if 'filter' in kwargs:
+            parms.cleaned_data['filter'] = json.loads(kwargs['filter'])
+        else:
+            parms.cleaned_data['filter'] = get_filter_params(kwargs)
+
+        if 'callback' in parms.cleaned_data:
+            return HttpResponse("{callback}({js})".format(
+                callback=kwargs['callback'],
+                js=json.dumps([t.strftime('%Y.%m.%d-%H:%M:%S.%f') for t in self.adapter.get_valid_versions(**parms.cleaned_data)]), mimetype='test/jsonp'
+            ))
+        else:
+            return HttpResponse(json.dumps([t.strftime('%Y.%m.%d-%H:%M:%S.%f') for t in self.adapter.get_valid_times(**parms.cleaned_data)]), mimetype='application/json')
+
+class GetValidElevationsMixin(OWSMixinBase):
+    class Parameters(CommonParameters):
+        callback = f.CharField(required=False)
+        layers = utils.MultipleValueField()
+
+        @classmethod
+        def from_request(cls, request):
+            request['layers'] = request.get('layers', '').split(',')
+            request['callback'] = request.get('callback', None)
+            if not request['callback']:
+                request['callback'] = request.get('jsonp', None)
+
+    def GetValidElevations(self, r, kwargs):
+        """Vendor extension that returns valid elevation bands in json format"""
+        parms = GetValidTimesMixin.Parameters.create(kwargs)
+        if 'filter' in kwargs:
+            parms.cleaned_data['filter'] = json.loads(kwargs['filter'])
+        else:
+            parms.cleaned_data['filter'] = get_filter_params(kwargs)
+
+        if 'callback' in parms.cleaned_data:
+            return HttpResponse("{callback}({js})".format(
+                callback=kwargs['callback'],
+                js=json.dumps([t.strftime('%Y.%m.%d-%H:%M:%S.%f') for t in self.adapter.get_valid_elevations(**parms.cleaned_data)]), mimetype='test/jsonp'
+            ))
+        else:
+            return HttpResponse(json.dumps([t.strftime('%Y.%m.%d-%H:%M:%S.%f') for t in self.adapter.get_valid_times(**parms.cleaned_data)]), mimetype='application/json')
 
 
 class OWSView(View, GetCapabilitiesMixin):

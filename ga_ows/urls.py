@@ -1,5 +1,6 @@
 from django.conf.urls.defaults import patterns, url
-from ga_ows.views.wfs import WFS, GeoDjangoWFSAdapter
+from ga_ows.views.wfs import WFS
+from ga_ows.views.wms import WMS, GeoDjangoWMSAdapter
 from ga_ows.models import test_models as m
 
 #
@@ -19,5 +20,5 @@ urlpatterns = patterns('',
         addr_postcode='27515',
         addr_country='USA',
         addr_email='jeff@renci.org'
-    ))
+    )),
 )
