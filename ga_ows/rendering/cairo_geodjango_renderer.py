@@ -227,19 +227,20 @@ class RenderingContext(object):
 
     def _sketch_polygon(self, g):
         xys = [self._xy(x,y) for x, y in g.coords[0]]
-        self.ctx.move_to(*xys[0])
-        for x, y in xys[1:]:
-            self.ctx.line_to(x,y)
-        self.ctx.close_path()
+        if xys:
+            self.ctx.move_to(*xys[0])
+            for x, y in xys[1:]:
+                self.ctx.line_to(x,y)
+            self.ctx.close_path()
 
-        if len(g.coords) > 1:
-            for interior in g.coords[1:]:
-                ixys = [self._xy(x,y) for x, y in interior]
-                self.ctx.new_sub_path()
-                self.ctx.move_to(*ixys[0])
-                for x, y in ixys[1:]:
-                    self.ctx.line_to(x,y)
-                self.ctx.close_path()
+            if len(g.coords) > 1:
+                for interior in g.coords[1:]:
+                    ixys = [self._xy(x,y) for x, y in interior]
+                    self.ctx.new_sub_path()
+                    self.ctx.move_to(*ixys[0])
+                    for x, y in ixys[1:]:
+                        self.ctx.line_to(x,y)
+                    self.ctx.close_path()
     
     def _sketch_multipolygon(self, g):
         for polygon in g.coords:
@@ -328,37 +329,40 @@ class RenderingContext(object):
 
     def _reckon(self, geom):
         """analyze a geometry to figure out where the label should go"""
-        if geom.geom_type == 'Point':
-            x, y = self._xy(geom.x, geom.y)
-            return x+5, y-5, 0
-        elif geom.geom_type in ('MultiPoint', 'Polygon', 'MultiPolygon', 'LinearRing'):
-            p = geom.centroid
-            x, y = self._xy(p.x, p.y)
-            return x, y, 0
-        elif geom.geom_type == 'LineString' and len(geom.coords) >= 2:
-            p1x, p1y = geom.coords[len(geom.coords)/2]
-            p2x, p2y = geom.coords[len(geom.coords)/2+1]
-            rise = p2y-p1y
-            run = p2x-p1x
-            if run == 0:
-                run = 0.01*math.pi
-            theta = math.atan(rise/run)
-            x, y = self._xy(p1x, p1y)
-            return x, y, theta
-        elif geom.geom_type == 'MultiLineString' and len(geom.geoms[0].coords) >= 2:
-            p1x, p1y = geom.geoms[0].coords[len(geom.coords)/2]
-            p2x, p2y = geom.geoms[0].coords[len(geom.coords)/2+1]
-            rise = p2y-p1y
-            run = p2x-p1x
-            if run == 0:
-                run = 0.01*math.pi
-            theta = math.atan(rise/run)
-            x, y = self._xy(p1x, p1y)
-            return x, y, theta
-        else:
-            p = geom.centroid
-            x, y = self._xy(p.x, p.y)
-            return x, y, 0
+        try:
+            if geom.geom_type == 'Point':
+                x, y = self._xy(geom.x, geom.y)
+                return x+5, y-5, 0
+            elif geom.geom_type in ('MultiPoint', 'Polygon', 'MultiPolygon', 'LinearRing'):
+                p = geom.centroid
+                x, y = self._xy(p.x, p.y)
+                return x, y, 0
+            elif geom.geom_type == 'LineString' and len(geom.coords) >= 2:
+                p1x, p1y = geom.coords[len(geom.coords)/2]
+                p2x, p2y = geom.coords[len(geom.coords)/2+1]
+                rise = p2y-p1y
+                run = p2x-p1x
+                if run == 0:
+                    run = 0.01*math.pi
+                theta = math.atan(rise/run)
+                x, y = self._xy(p1x, p1y)
+                return x, y, theta
+            elif geom.geom_type == 'MultiLineString' and len(geom.geoms[0].coords) >= 2:
+                p1x, p1y = geom.geoms[0].coords[len(geom.coords)/2]
+                p2x, p2y = geom.geoms[0].coords[len(geom.coords)/2+1]
+                rise = p2y-p1y
+                run = p2x-p1x
+                if run == 0:
+                    run = 0.01*math.pi
+                theta = math.atan(rise/run)
+                x, y = self._xy(p1x, p1y)
+                return x, y, theta
+            else:
+                p = geom.centroid
+                x, y = self._xy(p.x, p.y)
+                return x, y, 0
+        except:
+            print geom.centroid
 
         return 0,0,0
 

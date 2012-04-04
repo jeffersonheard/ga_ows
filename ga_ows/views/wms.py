@@ -406,7 +406,9 @@ class GeoDjangoWMSAdapter(WMSAdapterBase):
 
         def xform(g):
             if self.simplify:
-                g = g.simplify((maxx-minx) / width)
+                k = g.simplify((maxx-minx) / width)
+                if k:
+                    g = k
             g.transform(t_srs.wkt)
             return g
 
