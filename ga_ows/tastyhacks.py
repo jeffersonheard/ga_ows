@@ -23,7 +23,6 @@
 #THE SOFTWARE.
 
 from django.contrib.gis.db.models import GeometryField
-from django.contrib.gis.geos.geometry import GEOSGeometry
 from django.utils import simplejson
 
 from tastypie.bundle import Bundle
@@ -42,10 +41,7 @@ class GeometryApiField(ApiField):
         value = super(GeometryApiField, self).hydrate(bundle)
         if value is None:
             return value
-        elif isinstance(value, GEOSGeometry):
-            return value.json
-        else:
-            return simplejson.dumps(value)
+        return simplejson.dumps(value)
 
     def dehydrate(self, obj):
         return self.convert(super(GeometryApiField, self).dehydrate(obj))

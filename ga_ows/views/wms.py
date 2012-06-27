@@ -47,17 +47,10 @@ class WMSCache(object):
         else:
             self.collection = settings.MONGODB_ROUTES['default'][collection]
 
+
         self.collection.ensure_index("_creation_time")
         self.collection.ensure_index("_used_time")
-        self.collection.ensure_index("layers")
-        self.collection.ensure_index('bbox')
-        self.collection.ensure_index('width')
-        self.collection.ensure_index('height')
-        self.collection.ensure_index('time')
-        self.collection.ensure_index('elevation')
-        self.collection.ensure_index('v')
-        for locator in locators:
-            self.collection.ensure_index(locator)
+        self.collection.ensure_index(['layers','bbox','width','height','time','elevation','v'] + locators)
 
     def save(self, item, **keys):
         """ Save or update a cache item.
