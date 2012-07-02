@@ -10,6 +10,7 @@ from django.contrib.gis.geos import GEOSGeometry, Point
 import scipy
 import cairo
 from datetime import datetime
+import pymongo
 
 from osgeo import gdal, osr
 from django.contrib.gis import gdal as djgdal
@@ -50,7 +51,16 @@ class WMSCache(object):
 
         self.collection.ensure_index("_creation_time")
         self.collection.ensure_index("_used_time")
-        self.collection.ensure_index(['layers','bbox','width','height','time','elevation','v'] + locators)
+        self.collection.ensure_index([
+            ('layers', pymongo.ASCENDING),
+            ('srs',pymongo.ASCENDING),
+            ('styles', pymongo.ASCENDING),
+            ('bbox', pymongo.ASCENDING),
+            ('width',pymongo.ASCENDING),
+            ('height',pymongo.ASCENDING),
+            ('time', pymongo.ASCENDING),
+            ('elevation',pymongo.ASCENDING),
+            ('v',pymongo.ASCENDING)] + list(locators))
 
     def save(self, item, **keys):
         """ Save or update a cache item.
@@ -558,7 +568,7 @@ class GetMapMixin(common.OWSMixinBase):
         if item and not parms['fresh']:
             return HttpResponse(item, mimetype='image/'+parms['format'])
 
-        if self.adapter.requires_time and 'times' not in parms:
+        if self.adapter.requires_time and 'time' not in parms:
             raise common.MissingParameterValue.at('time')
         if self.adapter.requires_elevation and 'elevation' not in parms:
             raise common.MissingParameterValue.at('elevation')
