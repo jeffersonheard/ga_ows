@@ -267,7 +267,7 @@ class GetValidTimesMixin(OWSMixinBase):
         else:
             parms.cleaned_data['filter'] = get_filter_params(kwargs)
 
-        if 'callback' in parms.cleaned_data:
+        if 'callback' in parms.cleaned_data and parms.cleaned_data['callback']:
             return HttpResponse("{callback}({js})".format(
                 callback=kwargs['callback'],
                 js=json.dumps([t.strftime('%Y.%m.%d-%H:%M:%S.%f') for t in self.adapter.get_valid_times(**parms.cleaned_data)]), mimetype='test/jsonp'
@@ -295,13 +295,13 @@ class GetValidVersionsMixin(OWSMixinBase):
         else:
             parms.cleaned_data['filter'] = get_filter_params(kwargs)
 
-        if 'callback' in parms.cleaned_data:
+        if 'callback' in parms.cleaned_data and parms.cleaned_data['callback']:
             return HttpResponse("{callback}({js})".format(
                 callback=kwargs['callback'],
-                js=json.dumps([t.strftime('%Y.%m.%d-%H:%M:%S.%f') for t in self.adapter.get_valid_versions(**parms.cleaned_data)]), mimetype='test/jsonp'
+                js=json.dumps([t for t in self.adapter.get_valid_versions(**parms.cleaned_data)]), mimetype='test/jsonp'
             ))
         else:
-            return HttpResponse(json.dumps([t.strftime('%Y.%m.%d-%H:%M:%S.%f') for t in self.adapter.get_valid_times(**parms.cleaned_data)]), mimetype='application/json')
+            return HttpResponse(json.dumps([t for t in self.adapter.get_valid_versions(**parms.cleaned_data)]), mimetype='application/json')
 
 class GetValidElevationsMixin(OWSMixinBase):
     class Parameters(CommonParameters):
@@ -326,10 +326,10 @@ class GetValidElevationsMixin(OWSMixinBase):
         if 'callback' in parms.cleaned_data:
             return HttpResponse("{callback}({js})".format(
                 callback=kwargs['callback'],
-                js=json.dumps([t.strftime('%Y.%m.%d-%H:%M:%S.%f') for t in self.adapter.get_valid_elevations(**parms.cleaned_data)]), mimetype='test/jsonp'
+                js=json.dumps([t for t in self.adapter.get_valid_elevations(**parms.cleaned_data)]), mimetype='test/jsonp'
             ))
         else:
-            return HttpResponse(json.dumps([t.strftime('%Y.%m.%d-%H:%M:%S.%f') for t in self.adapter.get_valid_times(**parms.cleaned_data)]), mimetype='application/json')
+            return HttpResponse(json.dumps([t for t in self.adapter.get_valid_elevations(**parms.cleaned_data)]), mimetype='application/json')
 
 
 class OWSView(View, GetCapabilitiesMixin):
@@ -362,5 +362,3 @@ class OWSView(View, GetCapabilitiesMixin):
                 return self.__getattribute__(ciargs['request'])(request, ciargs)
         except OWSException as ex:
             return HttpResponse(ex.xml(extend=self.extended_exceptions), mimetype='text/xml')
-#        except Exception as ex:
-#            return HttpResponse(NoApplicableCode(ex).xml(extend=self.extended_exceptions), mimetype='text/xml')

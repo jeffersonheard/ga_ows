@@ -11,6 +11,7 @@ import scipy
 import cairo
 from datetime import datetime
 import pymongo
+import hashlib
 
 from osgeo import gdal, osr
 from django.contrib.gis import gdal as djgdal
@@ -48,19 +49,8 @@ class WMSCache(object):
         else:
             self.collection = settings.MONGODB_ROUTES['default'][collection]
 
-
-        self.collection.ensure_index("_creation_time")
-        self.collection.ensure_index("_used_time")
-        self.collection.ensure_index([
-            ('layers', pymongo.ASCENDING),
-            ('srs',pymongo.ASCENDING),
-            ('styles', pymongo.ASCENDING),
-            ('bbox', pymongo.ASCENDING),
-            ('width',pymongo.ASCENDING),
-            ('height',pymongo.ASCENDING),
-            ('time', pymongo.ASCENDING),
-            ('elevation',pymongo.ASCENDING),
-            ('v',pymongo.ASCENDING)] + list(locators))
+        self.collection.ensure_index([("_creation_time", pymongo.DESCENDING)])
+        self.collection.ensure_index([("_used_time", pymongo.DESCENDING)])
 
     def save(self, item, **keys):
         """ Save or update a cache item.
@@ -68,18 +58,27 @@ class WMSCache(object):
         :param keys: The keys to save the item under.  Must be serializable by PyMongo.
         :return:
         """
-        document = dict(keys)
+        document = keys
+        docid = hashlib.new('md5')
+        docid.update(str(sorted(keys.items())))
+        docid = docid.hexdigest()
+
+        document['_id'] = docid
         document['_item'] = Binary(item)
         document['_creation_time'] = datetime.utcnow()
         document['_used_time'] = document['_creation_time']
-        self.collection.update(keys, document, upsert=True)
+        self.collection.save(document)
 
     def locate(self, **keys):
         """ Find a single item in the cache.
         :param keys:
         :return:
         """
-        item = self.collection.find_and_modify(keys, {"$set" : {'_used_time' : datetime.utcnow() }})
+        docid = hashlib.new("md5")
+        docid.update(str(sorted(keys.items())))
+        docid = docid.hexdigest()
+
+        item = self.collection.find_and_modify({ '_id' : docid }, {"$set" : {'_used_time' : datetime.utcnow() }})
         if item:
             return item['_item']
         else:
@@ -93,7 +92,32 @@ class WMSCache(object):
         return self.collection.find(keys)
 
     def flush(self):
+        """
+        Delete the cache entirely.
+        """
         self.collection.drop()
+
+    def flush_older(self, when, **kwargs):
+        """
+        Delete cache entries older than a given time that also match a set of criteria.
+
+        :param when: A datetime object in the same time zone as the objects in the cache (prefer UTC)
+        :param kwargs: A set of pymongo query descriptors.  See `http://mongodb.org`_ for more details.
+        """
+        kwargs['_creation_time'] = {'$lte', when }
+        self.collection.remove(kwargs)
+
+    def flush_lru(self, count):
+        """
+        Flush the least-recently-used keys in the cache until there are no more than [count] objects in the cache
+
+        :param count: The cap of the number of remaining objects in the cache.
+        """
+        total = self.collection.count()
+        if total > count:
+            key = self.collection.find().sort(('_used_time', pymongo.DESCENDING))[count]
+            key = key['_used_time']
+            self.collection.remove({ '_used_time' : {'$lte' : key}})
 
     @staticmethod
     def for_geodjango_model(model, route='default'):
@@ -622,6 +646,7 @@ class GetMapMixin(common.OWSMixinBase):
                 driver = gdal.GetDriverByName('jpeg2000')
             else:
                 driver = gdal.GetDriverByName(format.encode('ascii'))
+
             try:
                 tmp = tempfile.NamedTemporaryFile(suffix='.' + format)
                 ds2 = driver.CreateCopy(tmp.name, ds)

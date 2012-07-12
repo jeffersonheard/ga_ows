@@ -124,6 +124,7 @@ class LinearGradient(object):
         self.include_right = include_right
         self.include_left = include_left
         self.stops = stops
+        self.delta = self.stops / (self.r-self.l)
 
         self.colors = np.zeros((stops,4), dtype=np.uint8)
         for stop in range(stops):
@@ -137,8 +138,8 @@ class LinearGradient(object):
         return ((value > self.l) or (value == self.l and self.include_left)) and ((value < self.r) or (value == self.r and self.include_right))
 
     def __call__(self, va):
-        iv = int((self.stops * (va-self.l) / (self.r-self.l)))
-        return self.colors[iv]
+        iv = int((va-self.l) * self.delta)
+        return self.colors[iv,0]
 
 class Choices(object):
     """
