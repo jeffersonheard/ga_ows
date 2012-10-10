@@ -17,6 +17,7 @@ def _parseHexColor(self, value):
     return np.array((red,green,blue,alpha), dtype=np.float32)
 
 
+
 class Stylesheet(object):
     """A symbolizer for features.
 
