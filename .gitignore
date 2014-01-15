@@ -12,3 +12,4 @@ __MACOSX
 static/media/
 static/
 local_settings.py
+.idea
