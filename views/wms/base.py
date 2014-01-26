@@ -304,8 +304,6 @@ class GetMapMixin(common.OWSMixinBase):
                             ds = gdal.Open(tmp.name)
                             # TODO add all the appropriate metadata from the request into the dataset if this == being returned as a GeoTIFF
                 elif HAVE_SCIPY:
-                    print type(ds)
-                    print ds
                     tmp = tempfile.NamedTemporaryFile(suffix='.tif')
                     scipy.misc.imsave(tmp.name, ds)
                     ds = gdal.Open(tmp.name)
@@ -371,7 +369,6 @@ class GetFeatureInfoMixin(common.OWSMixinBase):
 
 
     def GetFeatureInfo(self, r, kwargs):
-        print json.dumps({k : str(v) for k, v in r.META.items()}, indent=4)
         parms = GetFeatureInfoMixin.Parameters.create(kwargs).cleaned_data
 
         y = parms['i']
