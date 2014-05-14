@@ -15,16 +15,12 @@ try:
 except ImportError:
     HAVE_CAIRO = False
 
-from datetime import datetime
-from cStringIO import StringIO
-
 from osgeo import gdal
 import tempfile
 
 from ga_ows import utils
 from ga_ows.views import common
 import django.forms as f
-from django.conf import settings
 
 
 
