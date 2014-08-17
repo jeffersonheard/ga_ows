@@ -506,7 +506,8 @@ class GetFeatureMixin(WFSBase):
                 conn = drv.Open(connection_string)
 
                 # Put the QuerySet into a layer the hard way.
-                layer = conn.ExecuteSQL(query)
+                layer = conn.ExecuteSQL(query.encode('ascii'))
+
             elif db_params['ENGINE'].endswith('spatialite'):
                 # This works the same way as the if-statement above.
                 # todo replace this with the sqlite version of the same thing for preventing SQL injection attacks
