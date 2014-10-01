@@ -3,11 +3,9 @@ from django.views.generic import View
 from django import forms as f
 from lxml import etree
 import pprint
-from ga_ows import utils
+from ga_ows import parsing
 import json
 import re
-
-from ga_ows.utils import CaseInsensitiveDict, MultipleValueField
 
 def get_filter_params(ciargs):
     """filters can either be specified as JSON or they can be specified as keyword args prefixed by a single underscore, _"""
@@ -162,9 +160,9 @@ class GetCapabilitiesMixin(object):
 
     class Parameters(RequestForm):
         service = f.CharField()
-        accepted_versions = MultipleValueField()
-        accepted_formats = MultipleValueField()
-        sections = MultipleValueField(required=False)
+        accepted_versions = parsing.MultipleValueField()
+        accepted_formats = parsing.MultipleValueField()
+        sections = parsing.MultipleValueField(required=False)
         update_sequence = f.CharField(required=False)
 
         @classmethod
@@ -235,7 +233,7 @@ class GetCapabilitiesMixin(object):
         if not service:
             raise MissingParameterValue.at('service')
         else:
-            return GetCapabilitiesMixin.Parameters.create(CaseInsensitiveDict({
+            return GetCapabilitiesMixin.Parameters.create(parsing.CaseInsensitiveDict({
                 "service" : service,
                 "acceptversions" : ','.join(accepted_versions),
                 "sections" : ','.join(sections),
@@ -249,7 +247,7 @@ class OWSMixinBase(object):
 class GetValidTimesMixin(OWSMixinBase):
     class Parameters(CommonParameters):
         callback = f.CharField(required=False)
-        layers = utils.MultipleValueField()
+        layers = parsing.MultipleValueField()
 
         @classmethod
         def from_request(cls, request):
@@ -278,7 +276,7 @@ class GetValidTimesMixin(OWSMixinBase):
 class GetValidVersionsMixin(OWSMixinBase):
     class Parameters(CommonParameters):
         callback = f.CharField(required=False)
-        layers = utils.MultipleValueField()
+        layers = parsing.MultipleValueField()
 
         @classmethod
         def from_request(cls, request):
@@ -306,7 +304,7 @@ class GetValidVersionsMixin(OWSMixinBase):
 class GetValidElevationsMixin(OWSMixinBase):
     class Parameters(CommonParameters):
         callback = f.CharField(required=False)
-        layers = utils.MultipleValueField()
+        layers = parsing.MultipleValueField()
 
         @classmethod
         def from_request(cls, request):
@@ -346,7 +344,7 @@ class OWSView(View, GetCapabilitiesMixin):
         return request, root
 
     def dispatch(self, request, *args, **kwargs):
-        ciargs = CaseInsensitiveDict(request.REQUEST.items())
+        ciargs = parsing.CaseInsensitiveDict(request.REQUEST.items())
 
         try:
             if 'request' not in ciargs:

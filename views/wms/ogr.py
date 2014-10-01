@@ -1,13 +1,9 @@
-from ga_ows.views.wms.base import WMSAdapterBase, WMSCache
+from ga_ows.views.wms.base import WMSAdapterBase
 
 from django.contrib.gis.geos import Point
 from osgeo import osr
 from ga_ows.rendering.cairo_geodjango_renderer import RenderingContext
-from ga_ows.utils import create_spatialref
-
-class OGRDatasetCollectionAdapter(WMSAdapterBase):
-    def __init__(self, collection_name, storage_backend):
-        pass
+from ga_ows.parsing import create_spatialref
 
 class OGRDatasetWMSAdapter(WMSAdapterBase):
     """ A default implementation of the WMS adapter for an OGR dataset."""
@@ -34,36 +30,13 @@ class OGRDatasetWMSAdapter(WMSAdapterBase):
         self.elevation_property = elevation_property
         self.version_property = version_property
         self.dataset = dataset
-        self.cache = WMSCache(cache_route, self.dataset.GetName() + "__wms_cache")
         self.simplify = simplify
 
     def cache_result(self, item, **kwargs):
-        locator = kwargs
-        if 'fresh' in locator:
-            del locator['fresh']
-        locator['model'] = self.dataset.GetName()
-
-        self.cache.save(item, **kwargs)
+        pass
 
     def get_cache_record(self, layers, srs, bbox, width, height, styles, format, bgcolor, transparent, time, elevation, v, filter, **kwargs):
-        locator = {
-            'layers' : layers,
-            'srs' : srs,
-            'bbox' : bbox,
-            'width' : width,
-            'height' : height,
-            'styles' : styles,
-            'format' : format,
-            'bgcolor' : bgcolor,
-            'transparent' : transparent,
-            'time' : time,
-            'elevation' : elevation,
-            'v' : v,
-            'filter' : filter,
-            'model' : self.dataset.GetName()
-        }
-
-        return self.cache.locate(**locator)
+        return None
 
     def get_feature_info(self, wherex, wherey, layers, callback, format, feature_count, srs, filter):
         if type(srs) is int:

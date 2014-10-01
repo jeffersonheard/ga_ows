@@ -18,7 +18,7 @@ except ImportError:
 from osgeo import gdal
 import tempfile
 
-from ga_ows import utils
+from ga_ows import parsing
 from ga_ows.views import common
 import django.forms as f
 
@@ -188,12 +188,12 @@ class GetMapMixin(common.OWSMixinBase):
     task = None
 
     class Parameters(common.CommonParameters):
-        layers = utils.MultipleValueField()
+        layers = parsing.MultipleValueField()
         srs = f.CharField(required=False)
-        bbox = utils.BBoxField()
+        bbox = parsing.BBoxField()
         width = f.IntegerField()
         height =f.IntegerField()
-        styles = utils.MultipleValueField(required=False)
+        styles = parsing.MultipleValueField(required=False)
         format = f.CharField()
         bgcolor = f.CharField(required=False)
         transparent = f.BooleanField(required=False)
@@ -215,7 +215,7 @@ class GetMapMixin(common.OWSMixinBase):
             request['format'] = request.get('format', 'png')
             request['bgcolor'] = request.get('bgcolor')
             request['transparent'] = request.get('transparent', False) == 'true'
-            request['time'] = utils.parsetime(request.get('time'))
+            request['time'] = parsing.parsetime(request.get('time'))
             request['elevation'] = request.get('elevation', None)
             request['v'] = request.get('v', None)
             request['fresh'] = request.get('fresh', False)
@@ -286,7 +286,6 @@ class GetMapMixin(common.OWSMixinBase):
                     tmp = tempfile.NamedTemporaryFile(suffix='.png')
                     ds.write_to_png(tmp.name)
                     ds = gdal.Open(tmp.name)
-                    # TODO add all the appropriate metadata from the request into the dataset if this == being returned as a GeoTIFF
                 elif isinstance(ds, tuple):
                     ret = ds[1]
 
@@ -298,12 +297,10 @@ class GetMapMixin(common.OWSMixinBase):
                             tmp = tempfile.NamedTemporaryFile(suffix='.tif')
                             scipy.misc.imsave(tmp.name, ds)
                             ds = gdal.Open(tmp.name)
-                            # TODO add all the appropriate metadata from the request into the dataset if this == being returned as a GeoTIFF
                 elif HAVE_SCIPY:
                     tmp = tempfile.NamedTemporaryFile(suffix='.tif')
                     scipy.misc.imsave(tmp.name, ds)
                     ds = gdal.Open(tmp.name)
-                    # TODO add all the appropriate metadata from the request into the dataset if this == being returned as a GeoTIFF
 
             if not ret:
                 if fmt == 'tiff' or fmt == 'geotiff':
@@ -335,8 +332,8 @@ class GetFeatureInfoMixin(common.OWSMixinBase):
     """ Handle the GetFeatureInfo request in WMS.  Requires that the get_feature_info method is implemented in the adapter.
     """
     class Parameters(common.CommonParameters):
-        layers = utils.MultipleValueField()
-        bbox = utils.BBoxField()
+        layers = parsing.MultipleValueField()
+        bbox = parsing.BBoxField()
         width = f.IntegerField()
         height = f.IntegerField()
         i = f.IntegerField()
@@ -407,16 +404,17 @@ class GetFeatureInfoMixin(common.OWSMixinBase):
 class GetStylesMixin(common.OWSMixinBase):
     """ TODO: Handle the GetStyles request in WMS.
     """
-
+    # TODO Handle the GetStyles request in WMS.
 
 class GetLegendGraphicMixin(common.OWSMixinBase):
     """ TODO: Handle the GetLegendGraphic request in WMS.
     """
-
+    # TODO: Handle the GetLegendGraphic request in WMS.
 
 class DescribeLayerMixin(common.OWSMixinBase):
     """ TODO: Handle the DescribeLayer request in WMS
     """
+    # TODO: Handle the DescribeLayer request in WMS
 
 
 class WMS(

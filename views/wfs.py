@@ -28,15 +28,12 @@ from django import forms as f
 import json
 from django.shortcuts import render_to_response
 from ga_ows.views import common
-from ga_ows.utils import MultipleValueField, BBoxField, CaseInsensitiveDict
+from ga_ows.parsing import MultipleValueField, BBoxField, CaseInsensitiveDict
 from lxml import etree
 from ga_ows.views.common import RequestForm, CommonParameters, GetCapabilitiesMixin
 from osgeo import ogr
 from django.conf import settings
 from tempfile import gettempdir
-from django.db import connections
-import re
-from lxml import etree
 import os
 
 #: Requests' Common Parameters

@@ -1,4 +1,4 @@
-from ga_ows.views.wms.base import WMSAdapterBase, WMSCache
+from ga_ows.views.wms.base import WMSAdapterBase
 
 from collections import defaultdict
 from django.contrib.gis.db.models.proxy import GeometryProxy
@@ -8,7 +8,7 @@ from django.contrib.gis.geos import GEOSGeometry, Point
 from osgeo import osr
 from django.contrib.gis import gdal as djgdal
 from ga_ows.rendering.cairo_geodjango_renderer import RenderingContext
-from ga_ows.utils import create_spatialref
+from ga_ows.parsing import create_spatialref
 
 
 class GeoDjangoWMSAdapter(WMSAdapterBase):
@@ -36,36 +36,13 @@ class GeoDjangoWMSAdapter(WMSAdapterBase):
         self.elevation_property = elevation_property
         self.version_property = version_property
         self.cls = cls
-        self.cache = WMSCache.for_geodjango_model(self.cls, route=cache_route)
         self.simplify = simplify
 
     def cache_result(self, item, **kwargs):
-        locator = kwargs
-        if 'fresh' in locator:
-            del locator['fresh']
-        locator['model'] = self.cls._meta.object_name
-
-        self.cache.save(item, **kwargs)
+        return None
 
     def get_cache_record(self, layers, srs, bbox, width, height, styles, format, bgcolor, transparent, time, elevation, v, filter, **kwargs):
-        locator = {
-            'layers' : layers,
-            'srs' : srs,
-            'bbox' : bbox,
-            'width' : width,
-            'height' : height,
-            'styles' : styles,
-            'format' : format,
-            'bgcolor' : bgcolor,
-            'transparent' : transparent,
-            'time' : time,
-            'elevation' : elevation,
-            'v' : v,
-            'filter' : filter,
-            'model' : self.cls._meta.object_name
-        }
-
-        return self.cache.locate(**locator)
+        return None
 
     def get_feature_info(self, wherex, wherey, layers, callback, format, feature_count, srs, filter):
         if type(srs) is int:

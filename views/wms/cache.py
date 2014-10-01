@@ -1,6 +1,5 @@
-from bson import Binary
 import hashlib
-import pymongo
+from django.conf import settings
 
 class WMSCache(object):
     """The WMS Cache, based on MongoDB.
@@ -9,7 +8,7 @@ class WMSCache(object):
 
     * self.collection : the PyMongo collection object.  See the PyMongo API for how to use this.
     """
-    def __init__(self, route='default', collection='wms_cache', *locators):
+    def __init__(self,  *locators):
         """
         :param route: The MongoDB route as listed in settings.MONGODB_ROUTES
         :param collection: The Mongo collection to use for this cache
@@ -19,16 +18,6 @@ class WMSCache(object):
 
         #: ..
 
-        if not hasattr(settings, 'MONGODB_ROUTES'):
-            raise EnvironmentError('Settings must contain MONGODB_ROUTES')
-
-        if route in settings.MONGODB_ROUTES:
-            self.collection = settings.MONGODB_ROUTES[route][collection]
-        else:
-            self.collection = settings.MONGODB_ROUTES['default'][collection]
-
-        self.collection.ensure_index([("_creation_time", pymongo.DESCENDING)])
-        self.collection.ensure_index([("_used_time", pymongo.DESCENDING)])
 
     def save(self, item, **keys):
         """ Save or update a cache item.
